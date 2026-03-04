@@ -1,6 +1,3 @@
-import requests
-import yaml
-import os
 from weather import get_weather
 
 if __name__ == '__main__':
