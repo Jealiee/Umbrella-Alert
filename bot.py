@@ -31,8 +31,8 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text('Please send a valid city name (letters only).')
         return
 
-     latitude, longitude = get_coordinates(city)
-    if latitude in None:
+    latitude, longitude = get_coordinates(city)
+    if latitude in None or longitude in None:
         await update.message.reply_text("City not found. Please try another one")
         return 
 
