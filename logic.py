@@ -8,13 +8,18 @@ def analyze_weather(weather_data):
     snow = weather_data["snowfall_sum"]
     wind = weather_data["wind_speed_max"]
 
+    alerts =[]
+
+    if probability>50:
+        alerts.append("high chance of rain")
+
+    if rain>10:
+        alerts.append("heavy rain expected")
+
     if snow > 1:
-        return snow_alert
+        alerts.append("Snowfall expected")
 
-    if rain > 10 and wind > 50:
-        return storm_alert
+    if wind > 40:
+        alerts.append("Strong wind expected")
 
-    if probability >= 40 and rain >= 1:
-        return umbrella_alert
-
-    return no_alert
+    return alerts
