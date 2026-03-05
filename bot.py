@@ -28,6 +28,12 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text(f"Your city {city}")
+    
+    #connection with logic.py
+    
+    # weather_data = get_weather(latitude, longitude)
+    # final_message = analyze_weather(weather_data)
+    # await update.message.reply_text(final_message)
 
 
 def bot():
