@@ -8,6 +8,10 @@ from telegram.ext import (
     filters,
 )
 
+from geocode import get_coordinates
+from weather import get_weather 
+from logic import analyze_weather
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 user_seen = set()
 
@@ -27,13 +31,14 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text('Please send a valid city name (letters only).')
         return
 
-    await update.message.reply_text(f"Your city {city}")
-    
-    #connection with logic.py
-    
-    # weather_data = get_weather(latitude, longitude)
-    # final_message = analyze_weather(weather_data)
-    # await update.message.reply_text(final_message)
+     latitude, longitude = get_coordinates(city)
+    if latitude in None:
+        await update.message.reply_text("City not found. Please try another one")
+        return 
+
+    weather_data = get_weather(latitude, longitude)
+    final_message = analyze_weather(weather_data)
+    await update.message.reply_text(final_message)
 
 
 def bot():
