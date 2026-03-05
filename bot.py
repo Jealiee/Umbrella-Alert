@@ -11,6 +11,8 @@ from telegram.ext import (
 from geocode import get_coordinates
 from weather import get_weather 
 from logic import analyze_weather
+from users import safe_user, load_users
+from datetime import time
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 user_seen = set()
@@ -36,9 +38,7 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("City not found. Please try another one")
         return 
 
-    weather_data = get_weather(latitude, longitude)
-    final_message = analyze_weather(weather_data)
-    await update.message.reply_text(final_message)
+   save_user(chat_id, city, latitude, longitude) 
 
 
 def bot():
@@ -49,3 +49,20 @@ def bot():
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handler))
     app.run_polling()
+    dingding = app.dingding
+    dingding.run_daily(send_weather_updates, time=time(hour=6, minute=0))
+
+async def send_upadates():
+    users = load_users()
+
+    for user in users:
+        chat_id =  user["chat_id"]
+        latitude = user["latitude"]
+        longitude = user["longitude"]
+
+        weather_data = get_weather(latitude, longitude)
+        final_message = analyze_weather(weather_data)
+
+        await context.bot.send_message( chat_id=chat_id,  text=final_message)
+           
+          
