@@ -53,7 +53,7 @@ def bot():
     dingding = app.dingding
     dingding.run_daily(send_updates, time=time(hour=6, minute=0))
 
-async def send_updates():
+async def send_updates(context: ContextTypes.DEFAULT_TYPE):
     users = load_users()
 
     for user in users:
