@@ -50,8 +50,8 @@ def bot():
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handler))
     app.run_polling()
-    dingding = app.dingding
-    dingding.run_daily(send_updates, time=time(hour=6, minute=0))
+    job_queue = app.job_queue
+    job_queue.run_daily(send_updates, time=time(hour=6, minute=0))
 
 async def send_updates(context: ContextTypes.DEFAULT_TYPE):
     users = load_users()
