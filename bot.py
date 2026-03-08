@@ -10,7 +10,7 @@ from telegram.ext import (
 from datetime import time
 from zoneinfo import ZoneInfo
 
-from geocode import get_coordinates
+from geocode import get_coordinates, get_timezone
 from weather import get_weather
 from logic import analyze_weather
 from users import add_user, load_users, update_user
@@ -44,15 +44,20 @@ async def set_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("City not found. Please try another one")
         return
 
+    timezone = get_timezone(latitude, longitude)
+    if timezone is None:
+        await update.message.reply_text("Could not determine timezone. Please try another city.")
+        return
+
     existing_user = next((u for u in users if u["chat_id"] == chat_id), None)
 
     if existing_user:
-        update_user(chat_id, city, latitude, longitude)
+        update_user(chat_id, city, latitude, longitude, timezone)
         await update.message.reply_text(f"Your city has been updated to {city}.")
     else:
-        add_user(chat_id, city, latitude, longitude)
+        add_user(chat_id, city, latitude, longitude, timezone)
         await update.message.reply_text(
-            f"Got it! You will now receive weather updates for {city} every morning at 6:00 UTC."
+            f"Got it! You will now receive weather updates for {city} every morning at 6:00 your local time."
         )
 
 
@@ -90,7 +95,11 @@ def bot():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reject))
 
     job_queue = app.job_queue
-    job_queue.run_daily(
-        send_updates, time=time(hour=6, minute=0, tzinfo=ZoneInfo("UTC"))
-    )
+    users = load_users()
+    for user in users:
+        job_queue.run_daily(
+            send_updates, 
+            time=time(hour=6, minute=0, tzinfo=ZoneInfo(user['timezone'])),
+            context=user["chat_id"]
+        )
     app.run_polling()
