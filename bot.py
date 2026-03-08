@@ -2,32 +2,31 @@ import os
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    CommandHandler,
     MessageHandler,
+    CommandHandler,
     ContextTypes,
     filters,
 )
+from datetime import time
+from zoneinfo import ZoneInfo
 
 from geocode import get_coordinates
 from weather import get_weather 
 from logic import analyze_weather
 from users import add_user, load_users
-from datetime import time
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 user_seen = set()
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Welcome to Umbrella Alert! Send your city name to subscribe."
+    )
 
 async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     city = update.message.text.strip()
-
-    if chat_id not in user_seen and not any(u["chat_id"] == chat_id for u in load_users()):
-        user_seen.add(chat_id)
-        await update.message.reply_text(
-            "Welcome to Umbrella Alert! Send your city name in chat to get started."
-        )
-        return
+    users = load_users()
     
     if len(city) < 3 or len(city) > 50 or not city.replace(" ", "").isalpha():
         await update.message.reply_text('Please send a valid city name (letters only).')
@@ -37,6 +36,11 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if latitude is None or longitude is None:
         await update.message.reply_text("City not found. Please try another one")
         return 
+    
+    if any(u["chat_id"] == chat_id for u in users):
+        await update.message.reply_text("You're already subscribed.")
+        return
+        
 
     add_user(chat_id, city, latitude, longitude)
     
@@ -49,12 +53,14 @@ def bot():
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handler))
-    app.run_polling()
-    dingding = app.dingding
-    dingding.run_daily(send_updates, time=time(hour=6, minute=0))
 
-async def send_updates():
+    job_queue = app.job_queue
+    job_queue.run_daily(send_updates, time=time(hour=6, minute=0, tzinfo = ZoneInfo("UTC")))
+    app.run_polling()
+
+async def send_updates(context: ContextTypes.DEFAULT_TYPE):
     users = load_users()
 
     for user in users:
