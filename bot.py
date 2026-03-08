@@ -11,7 +11,7 @@ from telegram.ext import (
 from geocode import get_coordinates
 from weather import get_weather 
 from logic import analyze_weather
-from users import save_user, load_users
+from users import add_user, load_users
 from datetime import time
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -22,7 +22,7 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     city = update.message.text.strip()
 
-    if chat_id not in user_seen:
+    if chat_id not in user_seen and not any(u["chat_id"] == chat_id for u in load_users()):
         user_seen.add(chat_id)
         await update.message.reply_text(
             "Welcome to Umbrella Alert! Send your city name in chat to get started."
@@ -38,7 +38,8 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("City not found. Please try another one")
         return 
 
-    save_user(chat_id, city, latitude, longitude)
+    add_user(chat_id, city, latitude, longitude)
+    
     await update.message.reply_text(f'Got it! You will now recieve weather updates for {city}, every morning at 6am.')
 
 
